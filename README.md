@@ -17,6 +17,6 @@ An sourcecode to convert .sm file type to .slk file for One-Two Party mode of Au
     n,c,s,d,r are in the slk and are already decrypted
    
 2. How to using this tool?
-    Download .py file, run cmd at place you put this tool, type py sm2slkOTP_NoGUI.py, select file and you already have slk file for One-Two Party mode.
+    Download .py file, run cmd at place you put this tool, type py sm2slkOTP.py, select file and you already have slk file for One-Two Party mode.
 
 Special thanks to RT and nongginga
