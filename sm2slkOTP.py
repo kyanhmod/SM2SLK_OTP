@@ -76,12 +76,13 @@ def convert_sm_to_slk(notes):
     note_position = [0, 0, 0]
     dictionary = {0: "n", 1: "c", 2: "s", 3: "n", 4: "c", 5: "s", 6: "d", 7: "r"}
     
-    c_count = 0  # Đếm số lượng 'c' đã xuất hiện (toàn file)
+    # c_count sẽ được tính sau khi đã xây dựng all_notes
     all_notes = []
     current_chain = []  # list indices của c ODD trong all_notes
     pending_c_indices = []
     pending_local_ns = []
 
+    # --- BƯỚC 1: Xây dựng all_notes (chưa gán ODD/EVEN) ---
     for madi_section in notes:
         num_rows_madi = len(madi_section)
         # Sửa: Tránh chia cho 0 nếu num_rows_madi là 0
@@ -95,7 +96,7 @@ def convert_sm_to_slk(notes):
 
                 if char != "0":
                     enum_old = None
-                    column6 = "0"
+                    # column6 = "0" # Sẽ được xử lý sau
 
                     if char == "1":
                         enum_old = dictionary.get(lane)
@@ -109,9 +110,10 @@ def convert_sm_to_slk(notes):
                         enum_old = "r"
 
                     if enum_old:
+                        column6_val = "" # Giá trị mặc định
                         if enum_old == "c":
-                            c_count += 1
-                            column6 = "ODD" if c_count % 2 == 1 else "EVEN"
+                            column6_val = "PENDING" # Đánh dấu 'c' cần xét ODD/EVEN
+                            
                         all_notes.append({
                             'pos0': note_position[0],
                             'pos1': note_position[1],
@@ -119,7 +121,7 @@ def convert_sm_to_slk(notes):
                             'num_note': num_note,
                             'lane': lane,
                             'enum': enum_old,
-                            'column6': column6,
+                            'column6': column6_val, # Tạm thời đánh dấu PENDING
                             'value': 0
                         })
 
@@ -132,7 +134,26 @@ def convert_sm_to_slk(notes):
                     note_position[1] = 0
                     note_position[0] += 1
 
-    # Bây giờ xử lý chains để tính value cho c ODD
+    # --- BƯỚC 2 (MỚI): Xử lý ngoại lệ c -> d ---
+    # Duyệt qua all_notes để tìm c ngay trước d
+    for i in range(len(all_notes) - 1): # Lặp đến phần tử kế cuối
+        current_note = all_notes[i]
+        next_note = all_notes[i+1]
+        
+        # Nếu nốt hiện tại là 'c' VÀ nốt kế tiếp là 'd'
+        if current_note['enum'] == 'c' and next_note['enum'] == 'd':
+            current_note['column6'] = "IGNORED_CD" # Đánh dấu là bỏ qua
+            current_note['value'] = 0 # Set giá trị là 0 theo yêu cầu
+
+    # --- BƯỚC 3 (MỚI): Gán ODD/EVEN cho các nốt 'c' HỢP LỆ ---
+    c_count = 0
+    for note in all_notes:
+        # Chỉ gán ODD/EVEN cho các nốt 'c' chưa bị bỏ qua (còn PENDING)
+        if note['enum'] == 'c' and note['column6'] == "PENDING":
+            c_count += 1
+            note['column6'] = "ODD" if c_count % 2 == 1 else "EVEN"
+
+    # --- BƯỚC 4: Xử lý chains để tính value cho c ODD (Như cũ) ---
     for idx, note in enumerate(all_notes):
         if note['enum'] == "c" and note['column6'] == "ODD":
             current_chain.append(idx)
@@ -178,7 +199,7 @@ def convert_sm_to_slk(notes):
                 for i in range(chain_len):
                     start_idx = current_chain[i] + 1
                     if i < chain_len - 1:
-                        end_idx = current_chain[i + 1]
+                        end_idx = current_current[i + 1] # SỬA LỖI GÕ MÁY: current_chain[i+1]
                     else:
                         end_idx = idx  # vị trí của c EVEN
                     for j in range(start_idx, end_idx):
@@ -190,12 +211,12 @@ def convert_sm_to_slk(notes):
                 # Reset current
                 current_chain = []
 
-    # Nếu còn pending hoặc current_chain sau cùng, có thể set value=0
+    # Nếu còn pending hoặc current_chain sau cùng... (Logic cũ)
     if pending_c_indices or current_chain:
-        # Ví dụ set 0, hoặc tùy logic, nhưng ở đây giả sử không cần
         pass
     
-    # Set value for EVEN by copying from nearest previous ODD
+    # --- BƯỚC 5: Set value cho EVEN (Như cũ) ---
+    # Logic này sẽ tự động bỏ qua các nốt IGNORED_CD
     last_odd_value = 0
     for note in all_notes:
         if note['enum'] == "c" and note['column6'] == "ODD":
@@ -203,13 +224,10 @@ def convert_sm_to_slk(notes):
         elif note['enum'] == "c" and note['column6'] == "EVEN":
             note['value'] = last_odd_value
     
-    # In ra tất cả các notes và lưu vào output
+    # --- BƯỚC 6: In ra output (Như cũ) ---
     for note in all_notes:
-        # Sửa lỗi: Truyền một list/tuple các giá trị vào append
         output.append([note['pos0'], note['pos1'], note['pos2'], note['num_note'], note['enum'], note['value']])
-        #print(note['column6']): vị trí của C lẻ/chẵn
         
-    # Hàm này cần trả về danh sách các note đã chuyển đổi
     return output
     
 def save_notes(converted_notes):
