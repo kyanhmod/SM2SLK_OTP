@@ -24,5 +24,6 @@ Source code to convert .sm file type to .slk file for One-Two Party mode of Audi
    
 3. How to using this tool?
     Download .py file, run cmd at place you put this tool, type py sm2slkOTP.py, select file and you already have slk file for One-Two Party mode.
+    If you feel lazy to understand how this code work, so you can go to "Release" and download executable file to ussing that.
 
 Special thanks to RT and nongginga
